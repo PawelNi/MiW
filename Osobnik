@@ -1,0 +1,42 @@
+using System;
+
+namespace AlgorytmyGenetyczne
+{
+    public class Osobnik
+    {
+        public bool[] Genotyp;
+        public double Przystosowanie;
+
+        private int liczbaParametrow;
+        private int bitowNaParametr;
+
+        public Osobnik(int liczbaParametrow, int bitowNaParametr, Random los)
+        {
+            this.liczbaParametrow = liczbaParametrow;
+            this.bitowNaParametr = bitowNaParametr;
+            Genotyp = new bool[liczbaParametrow * bitowNaParametr];
+            for (int i = 0; i < Genotyp.Length; i++)
+                Genotyp[i] = los.NextDouble() < 0.5;
+        }
+
+        public void ObliczPrzystosowanie(Func<bool[], double[]> dekoder, Func<double[], double> funkcja)
+        {
+            var parametry = dekoder(Genotyp);
+            Przystosowanie = funkcja(parametry);
+        }
+
+        public void MutujJednopunktowo(Random los)
+        {
+            int punkt = los.Next(Genotyp.Length);
+            Genotyp[punkt] = !Genotyp[punkt];
+        }
+
+        public Osobnik Kopia()
+        {
+            var nowy = new Osobnik(liczbaParametrow, bitowNaParametr, new Random());
+            this.Genotyp.CopyTo(nowy.Genotyp, 0);
+            nowy.Przystosowanie = this.Przystosowanie;
+            return nowy;
+        }
+    }
+}
