@@ -1,0 +1,138 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace AlgorytmyGenetyczne
+{
+    public partial class Zadanie1Form : Form
+    {
+        const int liczbaOsobnikow = 9;
+        const int liczbaIteracji = 20;
+        const int liczbaBitowNaParametr = 5;
+        const double zakresMin = 0.0;
+        const double zakresMax = 100.0;
+        const int rozmiarTurnieju = 3;
+
+        List<Osobnik> pulaRodzicielska;
+        Random los = new Random();
+
+        private Button buttonStart;
+        private ListBox listBoxWyniki;
+
+        public Zadanie1Form()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.buttonStart = new System.Windows.Forms.Button();
+            this.listBoxWyniki = new System.Windows.Forms.ListBox();
+            this.SuspendLayout();
+
+            
+            this.buttonStart.Location = new System.Drawing.Point(20, 20);
+            this.buttonStart.Size = new System.Drawing.Size(120, 30);
+            this.buttonStart.Text = "Start";
+            this.buttonStart.Click += new System.EventHandler(this.buttonStart_Click);
+
+            
+            this.listBoxWyniki.Location = new System.Drawing.Point(20, 60);
+            this.listBoxWyniki.Size = new System.Drawing.Size(400, 300);
+
+            
+            this.ClientSize = new System.Drawing.Size(450, 400);
+            this.Controls.Add(this.buttonStart);
+            this.Controls.Add(this.listBoxWyniki);
+            this.Text = "Zadanie 1 – Zmutowany dywanik";
+            this.ResumeLayout(false);
+        }
+
+        private void buttonStart_Click(object sender, EventArgs e)
+        {
+            listBoxWyniki.Items.Clear();
+            InicjalizujPopulacje();
+            WypiszStatystyki(pulaRodzicielska, 0);
+
+            for (int iter = 1; iter <= liczbaIteracji; iter++)
+            {
+                var nowaPula = new List<Osobnik>();
+
+                while (nowaPula.Count < liczbaOsobnikow - 1)
+                {
+                    Osobnik wybrany = SelekcjaTurniejowa(pulaRodzicielska);
+                    wybrany = wybrany.Kopia();
+                    wybrany.MutujJednopunktowo(los);
+                    nowaPula.Add(wybrany);
+                }
+
+                Osobnik najlepszy = ZnajdzNajlepszego(pulaRodzicielska);
+                nowaPula.Add(najlepszy.Kopia());
+
+                foreach (var o in nowaPula)
+                    o.ObliczPrzystosowanie(Dekoder, Funkcja);
+
+                pulaRodzicielska = nowaPula;
+                WypiszStatystyki(pulaRodzicielska, iter);
+            }
+        }
+
+        private void InicjalizujPopulacje()
+        {
+            pulaRodzicielska = new List<Osobnik>();
+            for (int i = 0; i < liczbaOsobnikow; i++)
+            {
+                var osobnik = new Osobnik(2, liczbaBitowNaParametr, los);
+                osobnik.ObliczPrzystosowanie(Dekoder, Funkcja);
+                pulaRodzicielska.Add(osobnik);
+            }
+        }
+
+        private Osobnik SelekcjaTurniejowa(List<Osobnik> pula)
+        {
+            var wybrani = new List<Osobnik>();
+            for (int i = 0; i < rozmiarTurnieju; i++)
+            {
+                int indeks = los.Next(pula.Count);
+                wybrani.Add(pula[indeks]);
+            }
+            return wybrani.OrderByDescending(o => o.Przystosowanie).First();
+        }
+
+        private Osobnik ZnajdzNajlepszego(List<Osobnik> pula)
+        {
+            return pula.OrderByDescending(o => o.Przystosowanie).First();
+        }
+
+        private double Funkcja(double[] x)
+        {
+            return Math.Sin(x[0] * 0.05) + Math.Sin(x[1] * 0.05) + 0.4 * Math.Sin(x[0] * 0.15) * Math.Sin(x[1] * 0.15);
+        }
+
+        private double[] Dekoder(bool[] genotyp)
+        {
+            double[] fenotyp = new double[2];
+            int segment = liczbaBitowNaParametr;
+            for (int i = 0; i < 2; i++)
+            {
+                int start = i * segment;
+                int wartosc = 0;
+                for (int j = 0; j < segment; j++)
+                    if (genotyp[start + j])
+                        wartosc += 1 << (segment - j - 1);
+
+                int maks = (1 << segment) - 1;
+                fenotyp[i] = zakresMin + (zakresMax - zakresMin) * wartosc / maks;
+            }
+            return fenotyp;
+        }
+
+        private void WypiszStatystyki(List<Osobnik> pula, int iteracja)
+        {
+            double najlepszy = pula.Max(o => o.Przystosowanie);
+            double srednia = pula.Average(o => o.Przystosowanie);
+            listBoxWyniki.Items.Add($"Iteracja {iteracja}: Najlepszy = {najlepszy:F5}, Średni = {srednia:F5}");
+        }
+    }
+}
