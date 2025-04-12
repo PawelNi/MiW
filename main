@@ -1,0 +1,68 @@
+using System;
+using System.Windows.Forms;
+
+namespace AlgorytmyGenetyczne
+{
+    public partial class MainForm : Form
+    {
+        private Button buttonZadanie1;
+        private Button buttonZadanie2;
+        private Button buttonZadanie3;
+
+        public MainForm()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.buttonZadanie1 = new System.Windows.Forms.Button();
+            this.buttonZadanie2 = new System.Windows.Forms.Button();
+            this.buttonZadanie3 = new System.Windows.Forms.Button();
+            this.SuspendLayout();
+
+            this.buttonZadanie1.Location = new System.Drawing.Point(30, 30);
+            this.buttonZadanie1.Name = "buttonZadanie1";
+            this.buttonZadanie1.Size = new System.Drawing.Size(200, 30);
+            this.buttonZadanie1.Text = "Zadanie 1";
+            this.buttonZadanie1.Click += new System.EventHandler(this.buttonZadanie1_Click);
+
+    
+            this.buttonZadanie2.Location = new System.Drawing.Point(30, 70);
+            this.buttonZadanie2.Name = "buttonZadanie2";
+            this.buttonZadanie2.Size = new System.Drawing.Size(200, 30);
+            this.buttonZadanie2.Text = "Zadanie 2";
+            this.buttonZadanie2.Click += new System.EventHandler(this.buttonZadanie2_Click);
+
+            this.buttonZadanie3.Location = new System.Drawing.Point(30, 110);
+            this.buttonZadanie3.Name = "buttonZadanie3";
+            this.buttonZadanie3.Size = new System.Drawing.Size(200, 30);
+            this.buttonZadanie3.Text = "Zadanie 3";
+            this.buttonZadanie3.Click += new System.EventHandler(this.buttonZadanie3_Click);
+
+           
+            this.ClientSize = new System.Drawing.Size(280, 180);
+            this.Controls.Add(this.buttonZadanie1);
+            this.Controls.Add(this.buttonZadanie2);
+            this.Controls.Add(this.buttonZadanie3);
+            this.Name = "MainForm";
+            this.Text = "Algorytmy genetyczne";
+            this.ResumeLayout(false);
+        }
+
+        private void buttonZadanie1_Click(object sender, EventArgs e)
+        {
+            new Zadanie1Form().ShowDialog();
+        }
+
+        private void buttonZadanie2_Click(object sender, EventArgs e)
+        {
+            new Zadanie2Form().ShowDialog();
+        }
+
+        private void buttonZadanie3_Click(object sender, EventArgs e)
+        {
+            new Zadanie3Form().ShowDialog();
+        }
+    }
+}
