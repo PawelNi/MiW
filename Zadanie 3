@@ -1,0 +1,163 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace AlgorytmyGenetyczne
+{
+    public partial class Zadanie3Form : Form
+    {
+        private Button buttonStart;
+        private ListBox listBoxWyniki;
+
+        const int liczbaOsobnikow = 13;
+        const int liczbaIteracji = 100;
+        const int liczbaBitowNaWage = 6;
+        const int liczbaWag = 9;
+        const double zakresMin = -10.0;
+        const double zakresMax = 10.0;
+        const int rozmiarTurnieju = 3;
+
+        double[,] xorProbki = new double[,]
+        {
+            {0, 0, 0},
+            {0, 1, 1},
+            {1, 0, 1},
+            {1, 1, 0}
+        };
+
+        Random los = new Random();
+        List<Osobnik> pulaRodzicielska;
+
+        public Zadanie3Form()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.buttonStart = new Button();
+            this.listBoxWyniki = new ListBox();
+            this.SuspendLayout();
+
+            this.buttonStart.Location = new System.Drawing.Point(20, 20);
+            this.buttonStart.Size = new System.Drawing.Size(120, 30);
+            this.buttonStart.Text = "Start";
+            this.buttonStart.Click += new EventHandler(this.buttonStart_Click);
+
+            this.listBoxWyniki.Location = new System.Drawing.Point(20, 60);
+            this.listBoxWyniki.Size = new System.Drawing.Size(400, 300);
+
+            this.ClientSize = new System.Drawing.Size(450, 400);
+            this.Controls.Add(this.buttonStart);
+            this.Controls.Add(this.listBoxWyniki);
+            this.Text = "Zadanie 3 – XOR genetycznie";
+            this.ResumeLayout(false);
+        }
+
+        private void buttonStart_Click(object sender, EventArgs e)
+        {
+            listBoxWyniki.Items.Clear();
+            InicjalizujPopulacje();
+            WypiszStatystyki(pulaRodzicielska, 0);
+
+            for (int iter = 1; iter <= liczbaIteracji; iter++)
+            {
+                var nowaPula = new List<Osobnik>();
+
+                for (int i = 0; i < liczbaOsobnikow - 1; i++)
+                {
+                    var osobnik = Selekcja().Kopia();
+                    osobnik.MutujJednopunktowo(los);
+                    osobnik.ObliczPrzystosowanie(Dekoder, Funkcja);
+                    nowaPula.Add(osobnik);
+                }
+
+                var elita = ZnajdzNajlepszego(pulaRodzicielska);
+                nowaPula.Add(elita.Kopia());
+
+                pulaRodzicielska = nowaPula;
+                WypiszStatystyki(pulaRodzicielska, iter);
+            }
+        }
+
+        private void InicjalizujPopulacje()
+        {
+            pulaRodzicielska = new List<Osobnik>();
+            for (int i = 0; i < liczbaOsobnikow; i++)
+            {
+                var osobnik = new Osobnik(liczbaWag, liczbaBitowNaWage, los);
+                osobnik.ObliczPrzystosowanie(Dekoder, Funkcja);
+                pulaRodzicielska.Add(osobnik);
+            }
+        }
+
+        private Osobnik Selekcja()
+        {
+            return pulaRodzicielska
+                .OrderBy(x => los.Next())
+                .Take(rozmiarTurnieju)
+                .OrderBy(o => o.Przystosowanie)
+                .First();
+        }
+
+        private Osobnik ZnajdzNajlepszego(List<Osobnik> pula)
+        {
+            return pula.OrderBy(o => o.Przystosowanie).First();
+        }
+
+        private double[] Dekoder(bool[] genotyp)
+        {
+            double[] fenotyp = new double[liczbaWag];
+            int segment = liczbaBitowNaWage;
+            for (int i = 0; i < liczbaWag; i++)
+            {
+                int start = i * segment;
+                int wartosc = 0;
+                for (int j = 0; j < segment; j++)
+                    if (genotyp[start + j])
+                        wartosc += 1 << (segment - j - 1);
+                int maks = (1 << segment) - 1;
+                fenotyp[i] = zakresMin + (zakresMax - zakresMin) * wartosc / maks;
+            }
+            return fenotyp;
+        }
+
+        private double Funkcja(double[] w)
+        {
+            double blad = 0;
+            for (int i = 0; i < xorProbki.GetLength(0); i++)
+            {
+                double x1 = xorProbki[i, 0];
+                double x2 = xorProbki[i, 1];
+                double y = xorProbki[i, 2];
+
+                double[] we = { x1, x2, 1 };
+                double h1 = Sigmoid(Suma(we, w[0], w[1], w[2]));
+                double h2 = Sigmoid(Suma(we, w[3], w[4], w[5]));
+                double[] hidden = { h1, h2, 1 };
+                double wyjscie = Sigmoid(Suma(hidden, w[6], w[7], w[8]));
+
+                blad += Math.Pow(wyjscie - y, 2);
+            }
+            return blad;
+        }
+
+        private double Suma(double[] wej, double w0, double w1, double wbias)
+        {
+            return wej[0] * w0 + wej[1] * w1 + wej[2] * wbias;
+        }
+
+        private double Sigmoid(double x)
+        {
+            return 1.0 / (1.0 + Math.Exp(-x));
+        }
+
+        private void WypiszStatystyki(List<Osobnik> pula, int iteracja)
+        {
+            double najlepszy = pula.Min(o => o.Przystosowanie);
+            double srednia = pula.Average(o => o.Przystosowanie);
+            listBoxWyniki.Items.Add($"Iteracja {iteracja}: Najlepszy błąd = {najlepszy:F5}, Średni = {srednia:F5}");
+        }
+    }
+}
