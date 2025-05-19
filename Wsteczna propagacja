@@ -1,0 +1,257 @@
+using System;
+using System.Linq;
+
+namespace w.propagacja
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("Wybierz zadanie do wykonania:");
+                Console.WriteLine("1 - XOR (2-2-1)");
+                Console.WriteLine("2 - XOR+NOR (2-2-2-2)");
+                Console.WriteLine("3 - Sumator (3-3-2-2)");
+                Console.WriteLine("0 - Wyjście");
+                Console.Write("Twój wybór: ");
+                var klawisz = Console.ReadKey().Key;
+                Console.WriteLine();
+
+                if (klawisz == ConsoleKey.D0) break;
+
+                switch (klawisz)
+                {
+                    case ConsoleKey.D1:
+                        UruchomXor();
+                        break;
+                    case ConsoleKey.D2:
+                        UruchomXorNor();
+                        break;
+                    case ConsoleKey.D3:
+                        UruchomSumator();
+                        break;
+                    default:
+                        Console.WriteLine("Nieprawidłowy wybór.");
+                        break;
+                }
+
+                Console.WriteLine("Naciśnij dowolny klawisz, aby kontynuować...");
+                Console.ReadKey();
+            }
+        }
+
+        static void UruchomXor()
+        {
+            Console.WriteLine("Zadanie 1: XOR\n");
+            double[][] daneWejsciowe =
+            {
+                new double[] {0,0},
+                new double[] {0,1},
+                new double[] {1,0},
+                new double[] {1,1},
+            };
+            double[][] oczekiwaneWyjscia =
+            {
+                new double[] {0},
+                new double[] {1},
+                new double[] {1},
+                new double[] {0},
+            };
+
+            var siec = new WSN(new int[] { 2, 2, 1 });
+            TrenujIWyswietl(siec, daneWejsciowe, oczekiwaneWyjscia, 0.1, 0.3, 20000);
+        }
+
+        static void UruchomXorNor()
+        {
+            Console.WriteLine("Zadanie 2: XOR + NOR\n");
+            double[][] daneWejsciowe =
+            {
+                new double[] {0,0},
+                new double[] {0,1},
+                new double[] {1,0},
+                new double[] {1,1},
+            };
+            double[][] oczekiwaneWyjscia =
+            {
+                new double[] {0,1},
+                new double[] {1,0},
+                new double[] {1,0},
+                new double[] {0,0},
+            };
+
+            var siec = new WSN(new int[] { 2, 2, 2, 2 });
+            TrenujIWyswietl(siec, daneWejsciowe, oczekiwaneWyjscia, 0.1, 0.4, 20000);
+        }
+
+        static void UruchomSumator()
+        {
+            Console.WriteLine("Zadanie 3: Sumator\n");
+            double[][] daneWejsciowe =
+            {
+                new double[] {0,0,0},
+                new double[] {0,1,0},
+                new double[] {1,0,0},
+                new double[] {1,1,0},
+                new double[] {0,0,1},
+                new double[] {0,1,1},
+                new double[] {1,0,1},
+                new double[] {1,1,1},
+            };
+            double[][] oczekiwaneWyjscia =
+            {
+                new double[] {0,0},
+                new double[] {1,0},
+                new double[] {1,0},
+                new double[] {0,1},
+                new double[] {1,0},
+                new double[] {0,1},
+                new double[] {0,1},
+                new double[] {1,1},
+            };
+
+            var siec = new WSN(new int[] { 3, 3, 2, 2 });
+            TrenujIWyswietl(siec, daneWejsciowe, oczekiwaneWyjscia, 0.1, 0.4, 20000);
+        }
+
+        static void TrenujIWyswietl(
+            WSN siec,
+            double[][] daneWejsciowe,
+            double[][] oczekiwaneWyjscia,
+            double wspolczynnikUczenia,
+            double progBledu,
+            int maxEpok)
+        {
+            int liczbaEpok = siec.TrenujDoBledu(
+                daneWejsciowe,
+                oczekiwaneWyjscia,
+                wspolczynnikUczenia,
+                progBledu,
+                maxEpok);
+
+            Console.WriteLine($"Trening zakończony po {liczbaEpok} epokach\n");
+            Console.WriteLine("Wyniki dla próbek:");
+            for (int i = 0; i < daneWejsciowe.Length; i++)
+            {
+                var wynik = siec.PropagujDoPrzodu(daneWejsciowe[i]);
+                Console.WriteLine(
+                    $"Wejście: {string.Join(",", daneWejsciowe[i])} -> " +
+                    $"Wyjście: {string.Join(",", wynik.Select(w => Math.Round(w, 4)))} " +
+                    $"(oczekiwane: {string.Join(",", oczekiwaneWyjscia[i])})");
+            }
+        }
+    }
+
+    public class WSN
+    {
+        private readonly int[] warstwy;
+        private readonly double[][] neurony;
+        private readonly double[][][] wagi;
+        private readonly Random rand = new Random();
+
+        public WSN(int[] warstwy)
+        {
+            this.warstwy = warstwy;
+            neurony = warstwy.Select(w => new double[w]).ToArray();
+            wagi = new double[warstwy.Length - 1][][];
+
+            for (int l = 0; l < warstwy.Length - 1; l++)
+            {
+                wagi[l] = new double[warstwy[l] + 1][];
+                for (int i = 0; i < wagi[l].Length; i++)
+                {
+                    wagi[l][i] = new double[warstwy[l + 1]];
+                    for (int j = 0; j < warstwy[l + 1]; j++)
+                        wagi[l][i][j] = rand.NextDouble() * 2 - 1;
+                }
+            }
+        }
+
+        public double[] PropagujDoPrzodu(double[] wejscie)
+        {
+            Array.Copy(wejscie, neurony[0], wejscie.Length);
+            for (int l = 1; l < warstwy.Length; l++)
+            {
+                for (int j = 0; j < warstwy[l]; j++)
+                {
+                    double suma = wagi[l - 1][warstwy[l - 1]][j];
+                    for (int i = 0; i < warstwy[l - 1]; i++)
+                        suma += neurony[l - 1][i] * wagi[l - 1][i][j];
+                    neurony[l][j] = Sigmoid(suma);
+                }
+            }
+            return neurony.Last();
+        }
+
+        public int TrenujDoBledu(
+            double[][] daneWejsciowe,
+            double[][] cele,
+            double wspUczenia,
+            double progBledu,
+            int maxEpok)
+        {
+            for (int epoka = 1; epoka <= maxEpok; epoka++)
+            {
+                for (int s = 0; s < daneWejsciowe.Length; s++)
+                    PropagacjaWsteczna(daneWejsciowe[s], cele[s], wspUczenia);
+
+                bool ok = true;
+                for (int s = 0; s < daneWejsciowe.Length; s++)
+                {
+                    var wyjscie = PropagujDoPrzodu(daneWejsciowe[s]);
+                    for (int k = 0; k < cele[s].Length; k++)
+                    {
+                        if (Math.Abs(cele[s][k] - wyjscie[k]) > progBledu)
+                        {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (!ok) break;
+                }
+                if (ok) return epoka;
+            }
+            return maxEpok;
+        }
+
+        private void PropagacjaWsteczna(
+            double[] dane,
+            double[] cele,
+            double wspUczenia)
+        {
+            var wyjscia = PropagujDoPrzodu(dane).ToArray();
+            var bledu = new double[warstwy.Length][];
+            bledu[^1] = new double[warstwy[^1]];
+            for (int j = 0; j < warstwy[^1]; j++)
+                bledu[^1][j] = (cele[j] - wyjscia[j]) * wyjscia[j] * (1 - wyjscia[j]);
+
+            for (int l = warstwy.Length - 2; l >= 1; l--)
+            {
+                bledu[l] = new double[warstwy[l]];
+                for (int i = 0; i < warstwy[l]; i++)
+                {
+                    double sumErr = 0;
+                    for (int j = 0; j < warstwy[l + 1]; j++)
+                        sumErr += bledu[l + 1][j] * wagi[l][i][j];
+                    bledu[l][i] = sumErr * neurony[l][i] * (1 - neurony[l][i]);
+                }
+            }
+
+            for (int l = 0; l < warstwy.Length - 1; l++)
+            {
+                for (int i = 0; i < warstwy[l]; i++)
+                {
+                    for (int j = 0; j < warstwy[l + 1]; j++)
+                        wagi[l][i][j] += wspUczenia * bledu[l + 1][j] * neurony[l][i];
+                }
+                for (int j = 0; j < warstwy[l + 1]; j++)
+                    wagi[l][warstwy[l]][j] += wspUczenia * bledu[l + 1][j];
+            }
+        }
+
+        private double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-x));
+    }
+}
+
