@@ -1,0 +1,130 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Windows.Forms;
+using System.Globalization; 
+
+namespace IrisKnn
+{
+    public class Form1 : Form
+    {
+        private List<double[]> listaCech = new List<double[]>();
+        private List<int> listaKlas = new List<int>();
+
+        private Button przyciskWczytaj;
+        private Button przyciskNormalizuj;
+        private ComboBox comboBoxMetryka;
+        private NumericUpDown numericUpDownK;
+        private Button przyciskOblicz;
+        private TextBox textBoxWyniki;
+        private StatusStrip statusStrip;
+        private ToolStripStatusLabel toolStripStatusLabel;
+
+        public Form1()
+        {
+            ZbudujInterfejs();
+        }
+
+        private void ZbudujInterfejs()
+        {
+            this.Text = "K-NN – Klasyfikator Iris";
+            this.Size = new Size(720, 620);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+
+            przyciskWczytaj = new Button
+            {
+                Text = "Wczytaj dane",
+                Location = new Point(10, 10),
+                Size = new Size(120, 30)
+            };
+            przyciskWczytaj.Click += Przyciski_Click;
+            this.Controls.Add(przyciskWczytaj);
+
+            przyciskNormalizuj = new Button
+            {
+                Text = "Normalizuj dane",
+                Location = new Point(140, 10),
+                Size = new Size(120, 30),
+                Enabled = false
+            };
+            przyciskNormalizuj.Click += Przyciski_Click;
+            this.Controls.Add(przyciskNormalizuj);
+
+            Label labelMetryka = new Label
+            {
+                Text = "Metryka:",
+                Location = new Point(280, 15),
+                AutoSize = true
+            };
+            this.Controls.Add(labelMetryka);
+
+            comboBoxMetryka = new ComboBox
+            {
+                Location = new Point(340, 12),
+                Size = new Size(160, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Enabled = false
+            };
+            comboBoxMetryka.Items.AddRange(new string[]
+            {
+                "Euklidesowa",
+                "Manhattan",
+                "Czebyszew",
+                "Minkowski (p = 3)"
+            });
+            comboBoxMetryka.SelectedIndex = 0;
+            this.Controls.Add(comboBoxMetryka);
+
+            Label labelK = new Label
+            {
+                Text = "k:",
+                Location = new Point(510, 15),
+                AutoSize = true
+            };
+            this.Controls.Add(labelK);
+
+            numericUpDownK = new NumericUpDown
+            {
+                Location = new Point(535, 12),
+                Size = new Size(50, 24),
+                Minimum = 1,
+                Maximum = 150,
+                Value = 3,
+                Enabled = false
+            };
+            this.Controls.Add(numericUpDownK);
+
+            przyciskOblicz = new Button
+            {
+                Text = "Oblicz",
+                Location = new Point(600, 10),
+                Size = new Size(80, 30),
+                Enabled = false
+            };
+            przyciskOblicz.Click += Przyciski_Click;
+            this.Controls.Add(przyciskOblicz);
+
+            textBoxWyniki = new TextBox
+            {
+                Location = new Point(10, 50),
+                Size = new Size(680, 480),
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical,
+                ReadOnly = true,
+                Font = new Font("Consolas", 10)
+            };
+            this.Controls.Add(textBoxWyniki);
+
+            statusStrip = new StatusStrip();
+            toolStripStatusLabel = new ToolStripStatusLabel
+            {
+                Text = "" 
+            };
+            statusStrip.Items.Add(toolStripStatusLabel);
+            statusStrip.Dock = DockStyle.Bottom;
+            this.Controls.Add(statusStrip);
+        }
